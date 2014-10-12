@@ -77,6 +77,7 @@ int main(int argc, char **argv) {
 		const std::string param_meta_file	= cmdline.registerParameter("meta", "filename for meta information about data set");
 		const std::string param_train_file	= cmdline.registerParameter("train", "filename for training data [MANDATORY]");
 		const std::string param_test_file	= cmdline.registerParameter("test", "filename for test data [MANDATORY]");
+		const std::string param_full_test_file	= cmdline.registerParameter("full_test", "filename for full test data [optional only for sgda]");
 		const std::string param_val_file	= cmdline.registerParameter("validation", "filename for validation data (only for SGDA)");
 		const std::string param_out		= cmdline.registerParameter("out", "filename for output");
 
@@ -142,7 +143,18 @@ int main(int argc, char **argv) {
 		test.load(cmdline.getValue(param_test_file));
 		if (cmdline.getValue(param_verbosity, 0) > 0) { test.debug(); }
 
-		Data* validation = NULL;
+    Data* fullTest = NULL;
+    if (cmdline.hasParameter(param_full_test_file)) {
+      fullTest = new Data(
+        cmdline.getValue(param_cache_size, 0),
+        ! (!cmdline.getValue(param_method).compare("mcmc")), // no original data for mcmc
+        ! (!cmdline.getValue(param_method).compare("sgd") || !cmdline.getValue(param_method).compare("sgda")) // no transpose data for sgd, sgda
+      );
+      fullTest->load(cmdline.getValue(param_full_test_file));
+      if (cmdline.getValue(param_verbosity, 0) > 0) { fullTest->debug(); }
+    }
+
+    Data* validation = NULL;
 		if (cmdline.hasParameter(param_val_file)) {
 			if (cmdline.getValue(param_method).compare("sgda")) {
 				std::cout << "WARNING: Validation data is only used for SGDA. The data is ignored." << std::endl;
@@ -400,10 +412,16 @@ int main(int argc, char **argv) {
 		// () Save prediction
 		if (cmdline.hasParameter(param_out)) {
 			DVector<double> pred;
-			pred.setSize(test.num_cases);
-			fml->predict(test, pred);
-			pred.save(cmdline.getValue(param_out));	
-		}
+      if (cmdline.hasParameter(param_full_test_file)) {
+        pred.setSize(fullTest->num_cases);
+        fml->predict(*fullTest, pred);
+        pred.save(cmdline.getValue(param_out));	
+      } else {
+        pred.setSize(test.num_cases);
+        fml->predict(test, pred);
+        pred.save(cmdline.getValue(param_out));	
+      }
+    }
 				 	
 
 	} catch (std::string &e) {
