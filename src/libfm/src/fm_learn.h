@@ -89,6 +89,10 @@ class fm_learn {
 			}
 		}
 
+    virtual void save(std::string fileName) {
+      fm->save(fileName);
+    }
+
 	public:
 		virtual void learn(Data& train, Data& test) { }
 		

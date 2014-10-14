@@ -422,7 +422,9 @@ int main(int argc, char **argv) {
         pred.save(cmdline.getValue(param_out));	
       }
     }
-				 	
+
+    //save model
+    fml->save(cmdline.getValue(param_out));
 
 	} catch (std::string &e) {
 		std::cerr << std::endl << "ERROR: " << e << std::endl;
